@@ -1,0 +1,46 @@
+{{extend '../common/layout.art'}}
+
+{{block 'title'}} 404 {{/block}}
+
+{{ block 'href' }}
+ <style>
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #69BCF3;
+  }
+  h1 {
+    margin-top: 10%;
+    text-align: center;
+    font-size: 20em;
+    font-weight: 400;
+  }
+  p {
+    font-size: 26px;
+    text-align: center;
+  }
+
+ </style>
+{{ /block }}
+
+{{ block 'main'}}
+  <h1> 404 </h1>
+  <p>用户或密码不正确</p>
+  <p>页面将在<span class="s">3</span>秒后，跳转到登录页面</p>
+{{ /block }}
+
+{{ block 'script'}}
+  <script>
+    var s = document.querySelector('.s');
+    var data = 2;
+    // 在 3 秒后，进行跳转
+    var interval = setInterval(() => {
+      if (data <= 0) {
+        location.href = '/admin/login';
+        clearInterval(interval);
+      }
+      s.innerHTML = data;
+      data --;
+    }, 1000);
+  </script>
+{{ /block }}

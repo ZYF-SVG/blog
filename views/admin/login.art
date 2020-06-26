@@ -6,6 +6,11 @@
     <title>用户登录</title>
     <link rel="stylesheet" href="/admin/lib/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="/admin/css/base.css">
+    <style>
+        .alert {
+            background-color: pink;
+        }
+    </style>
 </head>
 
 <body>
@@ -13,14 +18,14 @@
         <div class="login-container">
             <h4 class="title">黑马程序员 - 博客管理员登录</h4>
             <div class="login">
-                <form action="user.html">
+                <form action="/admin/login" method="post" id="form">
                     <div class="form-group">
                         <label>邮件</label>
-                        <input type="email" class="form-control" placeholder="请输入邮件地址">
+                        <input type="email" name="email" class="form-control aemail" placeholder="请输入邮件地址">
                     </div>
                     <div class="form-group">
                         <label>密码</label>
-                        <input type="password" class="form-control" placeholder="请输入密码">
+                        <input type="password" name="password" class="form-control" placeholder="请输入密码">
                     </div>
                     <button type="submit" class="btn btn-primary">登录</button>
                 </form>
@@ -28,8 +33,42 @@
             <div class="tips"></div>
         </div>
     </div>
+
     <script src="/admin/lib/jquery/dist/jquery.min.js"></script>
     <script src="/admin/lib/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/admin/js/common.js"></script>
+    <script src="/admin/js/axios.js"></script>
+    <script>
+        // 获取 form
+        $('#form').on('submit', () => {
+            var f = $('#form').serializeArray();
+            /* [{name: "email", value: "742317550@qq.com"},{name: "password", value: "123"} ] */
+            // 处理数据
+            let result = serializeToJson(f);
+        
+            // 判断
+            if (result.email.trim().length == 0) {
+                alert('邮箱账号不能为空');
+                return false;
+            }
+            
+            if (result.password.trim().length == 0) {
+                alert('密码不能为空');
+                return false;
+            }
+        })
+
+        var aemail = document.querySelector('.aemail');
+       
+        // aemail.addEventListener('blur', () => {
+        //      const email = aemail.value;
+        //      axios.get('/admin/isuser?email=' + email).then(res => {
+        //          if (res.data == 1) {
+        //              alert('用户已存在');
+        //          }
+        //      })
+        // })
+    </script>
 </body>
 
 </html>
