@@ -573,5 +573,301 @@ let isEqual = await bcrypt.compare('明文密码', '加密密码');
 
 
 
-cookies 会跟着 请求的发送 而发送。 17
+## 5. 使用 session 存储用户信息
+
+### cookie 与 session
+
+**cookie**：浏览器在电脑硬盘中开辟的一块空间，主要供服务器端存储数据。
+
+- cookie中的数据是以域名的形式进行区分的。
+
+- cookie中的数据是有过期时间的，超过时间数据会被浏览器自动删除。
+
+- cookie中的数据会随着请求被自动发送到服务器端。
+
+![cookie 的交互图](H:\node.js\视频教程\博客项目\blog\md\images\cookie 的交互图.png)
+
+**session**：实际上就是一个对象，存储在服务器端的内存中，在 session对象 中也可以存储多条数据，每一条数据都有一个 **sessionid** 做为唯一标识。
+
+![ession 和 cookie](H:\node.js\视频教程\博客项目\blog\md\images\ession 和 cookie.png)
+
+​	**cookies 会跟着 请求的发送 而发送，不用设置的，自动发送的 。** 
+
+**下载**：在node.js中需要借助express-session实现session功能。
+
+```js
+> npm install express-session
+```
+
+**语法**：
+
+使用  `express-session` 模块实现 session 功能
+
+```js
+const session = require('express-session');
+app.use(session({secret: '密钥'}));
+// session 加密和解密所需的钥匙；
+```
+
+当服务端重启时，服务端的 session 就失效了的。
+
+登录路由中，给 `req.session.username = user.username`  就是用户名，添加到 req 中，后，再访问其他路由，获取 req 中我们添加的属性 。
+
+**步骤**：
+
+1. 在 app.js 中导入  express-session ，并配置 session，注意！配置 session 必须在 app 监听路由对象之前，不然在路由对象中，找不到 session；
+
+   ```js
+   app.js ：
+   
+   // 导入 session 模块
+   const session = require('express-session');
+   // 创建服务器
+   const app = express();
+   // 导入 session 模块
+   const session = require('express-session');
+   
+   // 设置 session 密钥, 必须放在，路由对象之前；
+   app.use(session({secret: '742317550'}));
+   
+   // 监听请求，调用对应的 路由对象, 可以放在 模板引擎配置之前
+   app.use('/home', home);
+   app.use('/admin', admin);
+   ```
+
+2. 然后在 admin 路由对象中配置， 主要是在 登录 成功后，就给 客户端 发送 sessionid，
+
+   ```js
+   // 表单登录请求
+   admin.post('/login', async (req, res) => {
+     // 判断提交过来的数据是否为空
+     const {email, password} = req.body;
+   
+     // 数据为空，跳转到 404 页面。
+     if (email.trim().length == 0 || password.trim().length == 0) {
+       return res.status(400).render('admin/error');
+     }
+   
+     // 数据库查询用户信息
+     const data = await user.findOne({email})
+   
+     // 判断是否有该用户用户, 进行加密密码的验证，返回布尔值
+     let isEqual = await bcrypt.compare(password, data.password);
+     
+     if (data) {
+       if (isEqual) {   // 判断密码
+         // 通过 session 给 req 添加一个 username 的属性,值为 用户名
+         req.session.username = data.username;
+         res.send('成功');
+       } else {
+         return res.status(400).render('admin/error');
+       }
+     } else {
+       return res.status(400).render('admin/error');
+     }
+   })
+   
+   // 在登录成功后，服务器 会给 浏览器发送 sessionid ，然后存储在 cookies 中；每次用户发送请求时，都会携带在请求响应 中，服务器 会根据这个 sessionid 在内部查找，看一看，有没有这个 用户存在；就可以返回这个用户对应的信息，给 客户端。
+   
+   // 登录成功后，访问 用户管理页面，然后给他传递数据，数据为 session 存储的登录用户名 。
+   // 用户管理页面
+   admin.get('/user', (req, res) => {
+     res.render('admin/user', {mag: req.session.username});
+   })
+   ```
+
+   ![用户登录](H:\node.js\视频教程\博客项目\blog\md\images\用户登录.png)
+
+   ​	
+
+3. 如果没有使用 session 来存储，用户的信息，登录 就像没有 登录一样，在页面的页面获取不到登录用户的信息 。
+
+4. 登录成功，后重定向列表页面。
+
+```js
+// 页面重定向到 用户管理页面
+res.redirect('/admin/user');
+```
+
+5. 显示用户名在 公共部分的头部；把公共的数据放到 一个可以共享的地方。
+
+```js
+req.app.locals.userInfo = user;
+// 这里的 app 就是app.js中的 app，不用导入，在 req 里面。
+
+// 判断是否有该用户用户, 进行加密密码的验证
+  let isEqual = await bcrypt.compare(password, data.password);
+  
+  if (data) {
+    if (isEqual) {   // 判断密码
+      // 通过 session 给 req 添加一个 username 的属性,值为 用户名,
+      req.session.username = data.username;
+      // 将用户的数据 都存储数据到 模板引擎 中
+      req.app.locals.userInfo = data;
+      // 页面重定向到 用户管理页面
+      res.redirect('/admin/user');
+    } else {
+      return res.status(400).render('admin/error');
+    }
+  } else {
+    return res.status(400).render('admin/error');
+  }
+})
+
+// layout.art
+<div class="header">
+  <!-- 网站标志 -->
+    <div class="logo fl">
+      黑马程序员 <i>ITHEIMA</i>
+    </div>
+    <!-- /网站标志 -->
+    <!-- 用户信息 -->
+    <div class="info">
+      <div class="profile dropdown fr">
+        <span class="btn dropdown-toggle" data-toggle="dropdown">
+          {{userInfo.username}}
+          <span class="caret"></span>
+        </span>
+        <ul class="dropdown-menu">
+            <li><a href="user-edit.html">个人资料</a></li>
+            <li><a href="#">退出登录</a></li>
+        </ul>
+      </div>
+    </div>
+    <!-- /用户信息 -->
+</div>
+```
+
+
+
+req.session 里面是这样的：
+
+```js
+Session {
+  cookie:
+   { path: '/',
+     _expires: null,
+     originalMaxAge: null,
+     httpOnly: true } 
+}
+
+// 用户登录后，向 session 里添加了 username
+Session {
+  cookie:
+   { path: '/',
+     _expires: null,
+     originalMaxAge: null,
+     httpOnly: true },
+  username: '暗部成员' 
+}
+```
+
+如果 session 会自动发送一个  session 给浏览器，存储在 浏览器的 cookies 中：
+
+![cookies的存储](H:\node.js\视频教程\博客项目\blog\md\images\cookies的存储.png)
+
+然后，浏览器发起请求时，请求体也会自动携带 cookies![cookie](H:\node.js\视频教程\博客项目\blog\md\images\cookie.png)
+
+
+
+
+
+## 6. 登录拦截
+
+监听路由是以 /admin 开头的，看看用户有没有登录，如果没有登录就 不能访问，但除 login 页面为。
+
+```js
+app.js:
+
+// 挂载静态资源, 要放在登录拦截之前；
+app.use(express.static(path.join(__dirname, 'public')));
+
+// 登录拦截， 放在路由对象前面
+app.use('/admin', (req, res, next) => {
+  // 除登录页面 和  req.session.username 为 undefined（就是用户没有登录
+  if (req.url != '/login' && !req.session.username) {
+    res.redirect('/admin/login');
+  } else {
+    next();
+  }
+})
+
+// 监听请求，调用对应的 路由对象, 可以放在 模板引擎配置之前
+app.use('/home', home);
+app.use('/admin', admin);
+```
+
+
+
+## 7. 优化代码
+
+在 model 文件夹 创建  `middleware`文件夹 放置中间件文件：
+
+**步骤**：
+
+- loginGuard.js 文件 登录拦截
+
+  ```js
+  //  登录拦截中间件
+  module.exports = (req, res, next) => {
+    // 除登录页面 和  req.session.username 为 undefined（就是用户没有登录
+    if (req.url != '/login' && !req.session.username) {
+      res.redirect('/admin/login');
+    } else {
+      // console.log(req.session);
+      next();
+    }
+  }
+  ```
+
+- 在 app.js 中导入：
+
+  ```js
+  // 登录拦截， 放在路由对象前面
+  app.use('/admin', require('./model/middleware/loginGuard'));
+  
+  // 监听请求，调用对应的 路由对象, 可以放在 模板引擎配置之前
+  app.use('/home', home);
+  app.use('/admin', admin);
+  ```
+
+  总结：router >  admin 放置每个路由的处理函数文件，然后导出，作为路由的 第二个 参数；
+
+- login.js  处理登录的函数体，事件的处理，然后导出；
+
+- loginPage.js 登录页面的渲染文件；
+
+- loginout.js 退出
+
+
+
+## 8. 注册用户：
+
+normal  admin 角色 2个 内容；
+
+0  启用， 1 禁用；
+
+
+
+实现用户添加路由
+
+user-eait-fn 文件；
+
+第三方验证 字段 模块  Joi： js 对象的规则描述语言 和 验证器。
+
+```js
+> npm install joi 
+```
+
+返回一个 po 对象，使用异步函数来接收消息，使用 try catch 来捕获错误信息 err.message ;
+
+
+
+错误信息用 url 携带，并传递到 渲染到 模板中 ；
+
+模板中要进行判断
+
+```js
+8
+```
 

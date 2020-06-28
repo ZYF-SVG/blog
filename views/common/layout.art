@@ -17,6 +17,16 @@
     <script src="/admin/lib/jquery/dist/jquery.min.js"></script>
     <script src="/admin/lib/bootstrap/js/bootstrap.min.js"></script>
     <script src="/admin/js/common.js"></script>
+    <script>
+        let info = document.querySelector('.info');
+        let fr = info.querySelector('.fr');
+        let dropdownMenu = document.querySelector('.dropdown-menu');
+        let state = 'none';
+        fr.addEventListener('click', () => {
+            state = state == 'none' ? 'block' : 'none';
+            dropdownMenu.style.display = state;
+        })
+    </script>
     {{ block 'script' }} {{ /block }}
     
 </html>
