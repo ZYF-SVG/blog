@@ -31,7 +31,6 @@ app.use('/admin', require('./middleware/loginGuard'));
 app.use('/home', home);
 app.use('/admin', admin);
 
-
 // 设置模板引擎
 // 针对 art 模板，使用 express-art-template 模板引擎来处理
 app.engine('art', require('express-art-template'));
@@ -39,6 +38,13 @@ app.engine('art', require('express-art-template'));
 app.set('views', path.join(__dirname, 'views'));
 // 设置默认后缀，注意不要多写了 s
 app.set('view engine', 'art');
+
+// 错误处理中间件
+app.use((err, req, res, next) => {
+  const data = JSON.parse(err);
+  // return res.redirect('/admin/user-edit?message='+ message);
+  res.redirect(`${data.path}?message=${data.message}`);
+})
 
 app.listen(80, () => {
   console.log('http://localhost/');
