@@ -57,7 +57,6 @@ const validateUser = (user) => {
     state: joi.string().valid('0', '1').required().error(new Error('提示： 用户的状态只能为 启用 和 禁用'))
   }
   return joi.validate(user, schema);
-  
 }
 
 module.exports = {

@@ -7,19 +7,18 @@ const bcrypt = require('bcryptjs');
 module.exports = async (req, res) => {
   // 判断提交过来的数据是否为空
   const {email, password} = req.body;
-
+  
   // 数据为空，跳转到 404 页面。
   if (email.trim().length == 0 || password.trim().length == 0) {
     return res.status(400).render('admin/error');
   }
 
   // 数据库查询用户信息
-  const data = await user.findOne({email})
-
-  // 判断是否有该用户用户, 进行加密密码的验证
-  let isEqual = await bcrypt.compare(password, data.password);
+  const data = await user.findOne({email});
   
   if (data) {
+    // 判断是否有该用户用户, 进行加密密码的验证
+    let isEqual = await bcrypt.compare(password, data.password);
     if (isEqual) {   // 判断密码
       // console.log('你登录了？');
       // 通过 session 给 req 添加一个 username 的属性,值为 用户名,

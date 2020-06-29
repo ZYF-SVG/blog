@@ -1087,27 +1087,346 @@ user-edit.art 页面
 
 ## 9. 渲染用户列表
 
-文件名： userPage.js
+在 `middleware`文件创建： user.js 文件，专门用于渲染 用户列表的 。
 
-id 原文输出就不会有 引号了。
-
-`user.countDocuments({}) 查询数据库里的 数据数；`
-
-total 总页数
-
-count 总数据数
-
-pagesize 一页的显示多少条
+当用户访问 `/admin/user` ：
 
 ```js
-limit
-skip 从 0 开始；
+admin.js :
+
+// 用户管理页面
+admin.get('/user', require('../middleware/user'));
+```
+
+**1. 查询数据库里的所有用户信息，然后传递到模板引擎中，渲染数据：**
+
+```js
+// 用户列表页面
+const { user } = require('../model/user');
+
+module.exports = async (req, res) => {
+  // 查询数据库中所有的用户数据
+  const userDate = await user.find();
+
+  // 把数据传递到模板引擎中
+  res.render('admin/user', {
+    userDate : userDate,
+  });
+}
+```
+
+**注意**：
+
+- id 原文输出就不会有 引号了。
+
+
+
+**2. 完成分页功能：**
+
+概述： 实际上就是点击页码时，发送 get 请求，携带当前页的数字，然后服务端获取到，这个数字，在通过技术，在数据库中查找，按照发送过来的 当前页，限制查找的数据 。
+
+几个必须的变量：
+
+```js
+page:  当前页，通过 url 获取，没有传递过来就默认为 1；
+pagesize：  一个页面显示多个数据； 
+count：  总数据，从数据库中获取的数据的总和；
+total：总页数 = 总数据 / 一页显示多少数据 （注意要向上取整，没有1.5页 ）；
+skipdate： 当前页从那条数据开始渲染： 可以限制每一页从那条数据开始渲染；利用
+		  skip 来实现；计算公式：
+          （当前页 - 1） * 10；
+          第一页 - 1 * 10 = 0；   skip 就从数据库为 0 的开始查；
+          第二页 - 1 * 10 = 10；  skip 就从数据库为 10 的开始查；
+          ...................
+
+`user.countDocuments({}) 查询数据库里的 数据数；`
+```
+
+1. 变量 page 从 url 或值：
+
+   ```js
+   // 当前页, 通过 url 传递过来默认为 1
+   const page = req.query.page || 1 ;
+   ```
+
+2. 规定一个页面要显示多少条数据：
+
+   ```js
+   // 一页显示多少条数据
+   const pagesize  = 10;
+   ```
+
+3. 获取数据的总数据：
+
+   ```js
+   // 总数据：查询数据库用户的数据数  12
+   const count = await user.countDocuments({});
+   ```
+
+4. 计算出 总页数：
+
+   ```js
+   // 总页数 = 总数据数 / 每页显示数据数
+   const total = Math.ceil(count / 10);   // 1.2 页数要向上取整，1.2页，也就是2页
+   ```
+
+5. 计算 当前页  和  查找关系：
+
+   ```js
+   // 当前页 从那个开始查起
+   let skipdate = (page - 1) * pagesize;
+   ```
+
+6. 结合 查找多少条数据 和 查找关系，从数据库查取数据：
+
+   ```js
+   // 按照分页 查取的用户信息。
+   const pageDate = await user.find().limit(pagesize).skip(skipdate);
+   ```
+
+7. 把 从数据库得到的数据，总页数 和  当前页 传入 模板引擎 中；
+
+   ```js
+   // 把数据传递到模板引擎中
+   res.render('admin/user', {
+       userDate : pageDate,
+       // 总页面，用于渲染 页面的页码 1，2，3
+       total: total,
+       // 传递当前页，用于控制 上下页的显示和隐藏
+       page: page
+   });
+   ```
+
+8. 在模板页面，首先控制 列表的显示数据先：
+
+   ```js
+   user.art :
+   {{each userDate}}
+   <tr>
+   <td>{{@$value._id}}</td>
+   <td>{{$value.username}}</td>
+   <td>{{$value.email}}</td>
+   <td>{{$value.role == 'normal' ? '普通用户' : '超级用户'}}</td>
+   <td>{{$value.state == 0 ? '启用' : '禁用' }}</td>
+   <td>
+       <a href="user-edit.html" class="glyphicon glyphicon-edit"></a>
+       <i class="glyphicon glyphicon-remove" data-toggle="modal" data-target=".confirm-modal"></i>
+   </td>
+   </tr>
+   {{/each}}
+   ```
+
+9. 利用 page 控制页码的渲染，点击 page 发送对应的请求；
+
+   ```html
+   <% for (let i = 1; i <= total; i++) {%>
+   	<li><a href="/admin/user?page=<%= i%>" ><%= i %></a></li>
+   <% } %>
+   ```
+
+10. 最后再控制 上下页显示与隐藏：
+
+    ```html
+    <!-- 上一页 ：当前页 为  1 时，就隐藏上一页；-->
+    <li style="display: <%= page == 1 ? 'none' : 'inline' %>">
+        <a href="/admin/user?page=<%= page - 1%>">
+        	<span>&laquo;</span>
+        </a>
+    </li>
+    
+    <!-- 下一页 ： 在进行 + 时，会进行字符串的拼接，可以先 减一个 0，开启隐式转换 -->
+    <li style="display: <%= page - 0 + 1 > total ? 'none' : 'inline' %>">
+        <a href="/admin/user?apge=<%= page - 0 + 1%>">
+            <span>&raquo;</span>
+        </a>
+    </li>
+    <!-- 就是不知道，为什么要进行 + 1 呢 ？ -->
+    ```
+
+    
+
+
+
+## 10. 修改用户信息
+
+admin/user-edit  这个页面，和用户添加页面是同一个页面，所以在进行渲染页面时，要进行判断，修改用户 url 中有传递的 id， 添加用户 的没有 id；
+
+页面是后 `userInterface` 文件，来进行渲染的：
+
+```js
+// 添加用户 和 修改用户 界面 
+admin.get('/user-edit', require('../middleware/userInterface'));
+```
+
+在  `userInterface` 文件中，首先进行判断 id 是否存在：
+
+```js
+// 渲染 添加用户 和 修改用户 界面，
+const { user } = require('../model/user');
+
+module.exports = async (req, res) => {
+  // 可以根据 是否有传递 id 过来来区分，2个操作
+  const { id } = req.query;
+  if (id) {
+    // 修改操作
+  else {
+    // 添加操作 
+  }
+}
+```
+
+2个分支，是2个不同的操作，都使用 模板引擎 去渲染，但渲染的数据不同；
+
+```js
+// 渲染 添加用户 和 修改用户 界面，
+const { user } = require('../model/user');
+
+module.exports = async (req, res) => {
+  // 可以根据 是否有传递 id 过来来区分，2个操作
+  const { id } = req.query;
+  if (id) {
+    // 修改操作
+    // 根据 id 获取用户的信息
+    const userlist = await user.findOne({_id: id});
+
+    // 模板引擎
+    res.render('admin/user-edit', {
+      // 获取错误信息
+      message: req.query.message,
+      // 传递用户的信息，展示在页面上
+      userlist: userlist,
+      // 修改页面 有 id
+      id: id,
+      // 不同操作，有不同的表单提交地址, 修改用户携带 id 过去
+      actiona: '/admin/user-modify?id=' + id,
+      // 按钮
+      button: '修改'
+    })
+  } else {
+    // 添加操作
+    // 获取 url 中的错误信息，渲染到 模板 中
+    res.render('admin/user-edit', {
+      message: req.query.message,
+      actiona: '/admin/user-eait-fn',
+      button: '提交'
+    });
+  }
+}
 ```
 
 
 
-页码对应的数据开始查询的位置：
+然后，共同的模板 `user-edit.art` 中，进行判断并渲染数据；注意，记得判断，是否有这个数据，再进行渲染，如果没有判断，在进行 添加用户 时，修改用户 的数据在 模板页面上 就没有传递进去，肯定会报错 ！
 
-每一页开始查找是 skip
+```html
+<!-- 分类标题 -->
+<div class="title">
+    <!-- 修改页面有id，添加用户页面没有id，所以使用 || 或 来应对，不会报错 -->
+    <h4>{{@id || '添加用户'}}</h4>
+    <!-- 错误提示 -->
+    <p class="tips">{{message}}</p>
+</div>
+<!-- /分类标题 -->
+<form class="form-container" action="{{actiona}}" method="post">
+    <div class="form-group">
+        <label>用户名</label>
+        <!-- 给每个控件，添加 value 属性，并进行判断 -->
+        <input type="text" value="{{ userlist && userlist.username }}" name="username" class="form-control" placeholder="请输入用户名" >
+    </div>
+    <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" value="{{ userlist && userlist.email }}" name="email" class="form-control" placeholder="请输入邮箱地址">
+    </div>
+    <div class="form-group">
+        <label>密码</label>
+        <input type="password" name="password" class="form-control" placeholder="请输入密码">
+    </div>
+    <div class="form-group">
+        <label>角色</label>
+        <select class="form-control" name="role">
+            <option value="normal" {{ userlist && userlist.role == 'normal' ? 'selected' : ''}}>普通用户</option>
+            <option value="admin"  {{ userlist && userlist.role == 'admin' ? 'selected' : ''}}>超级管理员</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>状态</label>
+        <select class="form-control" name="state">
+            <option value="0" {{ userlist && userlist.state == 0 ? 'selected' : ''}}>启用</option>
+            <option value="1" {{ userlist && userlist.state == 1 ? 'selected' : ''}}>禁用</option>
+        </select>
+    </div>
+    <div class="buttons">
+        <!-- 给按钮添加不同的文字， 提交 或是 修改 -->
+        <input type="submit" class="btn btn-primary" value="{{button}}">
+    </div>
+</form>
+```
 
-当前页 - 1 * 10；
+![中间件进行优化](H:\node.js\视频教程\博客项目\blog\md\images\中间件进行优化.png)
+
+这就是，修改用户 的页面；
+
+点击修改，会触发 另一个 路由，专门成立 添加事件 的： `usermodify.js`  文件
+
+1. 提交的时候，进行 密码 的判断，正确就进行  修改操作；否则就 触发错误中间件；传递 错误信息过去 ；
+
+```js
+// 修改用户信息
+const { user } = require('../model/user');
+const bcrypt = require('bcryptjs');
+
+module.exports = async (req, res, next) => {
+  const id = req.query.id;
+  const { username, email, role, state, password } = req.body;
+
+  // 比对用户提交的密码 和 数据库里的密码 一样就修改密码 反着就 重定向到修改页面 。
+  const { password:userid } = await user.findOne({_id: id});
+  // 进行密码的对比
+  const is = await bcrypt.compareSync(password, userid);
+
+  if (is) {
+    // 匹配一致, 进行修改
+    user.updateOne({_id: id}, {username, email, role, state}).then(res => {
+      console.log('修改用户数据成功');
+    })
+    // 重定向
+    return res.redirect('/admin/user');
+  } else {
+    // 密码不一致, 触发错误中间件，传递 重定向 和 错误的信息 和 参数
+    const resurl = { path: '/admin/user-edit',  message: '您输入的密码不一致', id: id };
+    return next(JSON.stringify(resurl));
+  }
+}
+```
+
+2. 但 错误中间件 没有办法 获取 id，err 写死了，只能接受 2个参数；所以进行修改；
+
+```js
+app.use((err, req, res, next) => {
+  const data = JSON.parse(err);
+  // 1.第一代：return res.redirect('/admin/user-edit?message='+ message);
+  // {"path":"/admin/user-edit","message":"您输入的密码不一致","id":"5ef5f917fca85f0eac57b8c2"}
+  // 2.第二代：res.redirect(`${data.path}?message=${data.message}`); // 这样只能获取到 path 和 message，无法获取 id
+  // 循环遍历，拿到传递过来的每一项数据
+  const parameter = [];
+  for (let item in data) {
+    // 排除 path 项
+    if (item !== 'path') {
+      // 接收的数据为：[ message: '您输入的密码不一致', id: '5ef5f917fca85f0eac57b8c2' ]
+      // 转换为：[ 'message=您输入的密码不一致', 'id=5ef5f917fca85f0eac57b8c2' ]
+      parameter.push(item + '=' + data[item]);
+    }
+  }
+  // 把数组用 & 分隔成 这样： message=您输入的密码不一致&id=5ef5f917fca85f0eac57b8c2
+  // parameter.join('&'); 把他当成参数传递过去。
+  res.redirect(`${data.path}?${parameter.join('&')}`);
+})
+```
+
+将用户提交的密码 和  数据库中的用户 密码，进行匹配；
+
+bcrypt 进行匹配，返回一个布尔值 ；
+
+修改信息，不包括密码，密码是进行比对的，看能不能进行 修改而已 。
+
+重定向到 用户列表页面
