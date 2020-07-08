@@ -26,6 +26,7 @@ module.exports = async (req, res) => {
     // 总页面，用于渲染 页面的页码 1，2，3
     total: total,
     // 传递当前页，用于控制 上下页的显示和隐藏
-    page: page
+    page: page,
+    currenLink: 'user'
   });
 }

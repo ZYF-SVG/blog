@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
       // console.log('你登录了？');
       // 通过 session 给 req 添加一个 username 的属性,值为 用户名,
       req.session.username = data.username;
-      // 将用户的数据 都存储数据到 模板引擎 中
+      // 将用户的数据 都存储数据到 模板引擎 中,记录当前登录的用户的信息
       req.app.locals.userInfo = data;
       // 页面重定向到 用户管理页面
       res.redirect('/admin/user');

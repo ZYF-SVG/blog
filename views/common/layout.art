@@ -18,6 +18,7 @@
     <script src="/admin/lib/bootstrap/js/bootstrap.min.js"></script>
     <script src="/admin/js/common.js"></script>
     <script>
+        // 用户显示区域
         let info = document.querySelector('.info');
         let fr = info.querySelector('.fr');
         let dropdownMenu = document.querySelector('.dropdown-menu');

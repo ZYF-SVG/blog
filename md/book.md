@@ -845,14 +845,14 @@ app.use('/admin', admin);
 
 
 
-## 8. 注册用户：
+# 5. 注册用户：
 
 1. 客户端前面页面进行数据的判断；
 2. 后端人员再进行一次判断，使用 joi 模块，进行判断，捕获错误信息，然后进行提示；
 
 normal  admin 角色 2个 内容；
 
-### 1. 修改添加模板 添加路由；
+## 1. 修改添加模板 添加路由；
 
 修改添加用户模板的 表单提交方式 和 提交路径； 然后新建一个 添加用户路由文件，然后引进 app.js 
 
@@ -870,7 +870,7 @@ admin.post('/user-eait-fn', require('../middleware/userAdd'));
 
 
 
-### 2. 服务端进行数据的验证，捕获错误信息
+## 2. 服务端进行数据的验证，捕获错误信息
 
 在 `userAdd.js` 中书写验证的函数体：
 
@@ -969,7 +969,7 @@ user-edit.art 页面
 
 
 
-### 3. 验证邮箱 是否被注册
+## 3. 验证邮箱 是否被注册
 
 根据返回值来判断有没有这个用户，存在就有数据，空的就没有存在 ；
 
@@ -989,7 +989,7 @@ user-edit.art 页面
 
 
 
-### 4. 对密码进行加密
+## 4. 对密码进行加密
 
 把加密的密码 替换 body 里面的密码 。
 
@@ -1003,7 +1003,7 @@ user-edit.art 页面
 
 
 
-### 5. 添加到数据库中
+## 5. 添加到数据库中
 
 ```js
   // 将用户添加到数据库中
@@ -1016,7 +1016,7 @@ user-edit.art 页面
 
 
 
-### 6. 代码优化
+## 6. 代码优化
 
 #### 1.代码的区分
 
@@ -1085,7 +1085,7 @@ user-edit.art 页面
 
    
 
-## 9. 渲染用户列表
+## 7. 渲染用户列表
 
 在 `middleware`文件创建： user.js 文件，专门用于渲染 用户列表的 。
 
@@ -1247,7 +1247,7 @@ skipdate： 当前页从那条数据开始渲染： 可以限制每一页从那�
 
 
 
-## 10. 修改用户信息
+# 6.  修改用户信息
 
 admin/user-edit  这个页面，和用户添加页面是同一个页面，所以在进行渲染页面时，要进行判断，修改用户 url 中有传递的 id， 添加用户 的没有 id；
 
@@ -1430,3 +1430,820 @@ bcrypt 进行匹配，返回一个布尔值 ；
 修改信息，不包括密码，密码是进行比对的，看能不能进行 修改而已 。
 
 重定向到 用户列表页面
+
+
+
+# 7.删除用户信息
+
+叉号，自定义属性存储 id 的值；
+
+delete 事件
+
+在删除弹出框中，添加一个控件，但是他是不显示出来的，但点击提交按钮时，发送请求，他是会发生数据的，所以将 获取的id，作为他的 value 值，发送时，服务端就可以获取到 要删除的 id 了 。
+
+1. 给 叉号添加一个自定义属性 data-id 存储 当前点击的用户的 id
+
+   ```js
+   <td>
+       <a href="/admin/user-edit?id={{@$value._id}}" ></a>
+       <!-- 叉号 -->	
+       <i class="glyphicon glyphicon-remove" data-id="{{@$value._id}}" ></i>
+   </td>
+   ```
+
+2. 创建一个  隐藏的文本框，在提示框内创建：  `type = 'hidden'`
+
+   ```html
+   <div class="modal-body">
+       <p>您确定要删除这个用户吗?</p>
+       <!-- 隐式的控件，存储发送的id值，不显示，但表单发送数据时，会发生数据过去 -->
+       <input type="hidden" name="id" class="implicit">
+   </div>
+   ```
+
+3. 书写 js，给 隐藏的文本框 添加 value 属性；
+
+   ```js
+   // 获取叉号, 页面上有多个，所以是 All
+   let deletaForm = document.querySelectorAll('.glyphicon-remove');
+   // 获取隐式控件
+   let implicit = document.querySelector('.implicit');
+   
+   // 给叉号添加，点击事件，点击给 隐式控件 添加 value 值
+   for (let i = 0; i < deletaForm.length; i++) {
+       deletaForm[i].addEventListener('click', function(){
+           // 获取 自定义属性中的id
+           const id = this.getAttribute('data-id');
+           implicit.value = id;
+       })
+   }
+   ```
+
+4. 创建一个 删除路由
+
+   ```js
+   // 用户删除路由
+   admin.get('/delete', require('../middleware/user-delete'));
+   ```
+
+5. 编写 删除代码
+
+   ```js
+   // 删除用户路由
+   const { user } = require('../model/user');
+   
+   module.exports = (req, res) => {
+     // 获取要删除的 id
+     const { id } = req.query;
+     console.log(id);
+     user.findOneAndDelete({_id: id}).then(res => console.log('删除用户成功'))
+         .catch(err => console.log('删除用户失败' + err));
+    //  重定向
+     res.redirect('/admin/user');
+   }
+   ```
+
+
+
+# 8.文章管理
+
+文章列表页面路由路径名： `article`   处理的路由： article .js 
+
+文章编辑页面路由路径名： `article-edit`    处理的路由：  article-edit .js
+
+## 1. 侧边栏选中状态：
+
+修改选中状态，
+
+currentLink ： user / article
+
+用户管理页面的  用户页面 和 添加、修改 页面 的模板引擎 传递一个  `currenLink: 'user'`
+
+给文章页面的  文章列表页面  和 修改文章页面 的模板引擎传递一个  `currenLink: 'article'`
+
+如果在 公共模板 侧边栏 中，进行判断当前携带的是那个值：
+
+```html
+<ul class="menu list-unstyled">
+  <li>
+    <a class="item {{ currenLink == 'user' ? 'active' : ''}}" href="/admin/user">
+      <span class="glyphicon glyphicon-user"></span>
+      用户管理
+    </a>
+  </li>
+  <li>
+    <a class="item {{ currenLink == 'article' ? 'active' : ''}}" href="/admin/article">
+      <span class="glyphicon glyphicon-th-list"></span>
+      文章管理
+    </a>
+  </li>
+</ul>
+```
+
+
+
+
+
+## 2. 新建文章对象 srticle.js
+
+```js
+// 文章集合
+const mongoose = require('mongoose');
+
+// 创建文章集合规则
+const sticleSchema = new mongoose.Schema({
+    title: {    // 文章标题
+      type: String,
+      maxlength: 20,
+      maxlength: 4,
+      required: [true, '文章标题必填']
+    },
+    author: {    // 文章的作者 关联 user 的 用户 id
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'user',
+      required: true
+    },
+    publishDate: {  // 创建日期
+      type: Date,
+      default: Date.now
+    },
+    cover: {  // 上传文件
+      type: String,
+      default: null
+    },
+    content: {    // 文章内容
+      type: String
+    }
+})
+
+const article = mongoose.model('Article', sticleSchema);
+
+module.exports = {
+  article
+}
+```
+
+
+
+## 3. 渲染添加文章页面 实现文件的上传
+
+article-ited  渲染添加文章路由路径；修改添加文章模板：
+
+1. 给每个 表单控件添加 name 属性；
+2. 给 form 表单提交 提交路径 (`/admin/article-add` ) 和 上传方式（post） ，还是技术 上传文件 表单独特的属性 `enctype`
+
+3. **表单属性`enctype` ： 指定表单数据的编码类型，默认值为 `application/x-www-form-urlencoded` （`name=zsan&age=12`)**
+
+   **`multipart/form-data`  将表单的数据类型设置为 2进制。因为表单要进行文件上传，所以要设置这个 。**
+
+
+
+**formidable 第三方模块**
+
+**作用**： 解析表单，支持 get请求参数 ， post 请求参数，文件上传；
+
+**下载**：
+
+```js
+npm install formidable
+```
+
+**基本语法**：
+
+```js
+// 引入formidable模块
+ const formidable = require('formidable');
+
+ // 创建表单解析对象
+ const form = new formidable.IncomingForm();
+ // 设置文件上传路径，采用 绝对地址
+ form.uploadDir = "/my/dir";
+ // 是否保留表单上传文件的扩展名，不保持是话，无法打开图片
+ form.keepExtensions = false;
+ // 对表单进行解析
+ form.parse(req, (err, fields, files) => {
+     /*
+     	req 就是 req；
+     	err 错误对象，如果表单解析错误，err 包含错误信息，成功为 null；
+     	fields 存储普通请求参数；
+     	files 存储上传的文件信息
+     */
+ });
+```
+
+
+
+4. 在 **静态资源目录 中**，创建上传文件的存储， `uploads 文件夹`，使用 绝对路径；
+
+5. 上传文件的代码要写在 数据表单上传的路由 中，才能获取到数据：
+
+   ```js
+   //  添加文章 表单提交路由
+   // 导入 formidable 模块
+   const formidable = require('formidable');
+   const path = require("path");
+   
+   module.exports = (req, res) => {
+     // 创建表单解析对象
+     const form = new formidable.IncomingForm();
+     // 设置文件上传的路径，使用绝对路径
+     form.uploadDir = path.join(__dirname, '../', 'uploads');
+     // 是否保留上传文件的后缀名
+     form.keepExtensions = true;
+     // 对表单进行解析后，调用回调函数
+     form.parse(req, (err, fields, files) => {
+       // fields 普通数据；  files 上传元素的数据;  req 就是 req
+       // 展示图片
+     })
+   }
+   ```
+
+   在页面上，进行 文件的上传 后，就可以在  设置的文件夹中，看到 文件了；
+
+   ![files](H:\node.js\视频教程\博客项目\blog\md\images\files.png)
+
+   ![fields](H:\node.js\视频教程\博客项目\blog\md\images\fields.png)
+
+   
+
+   
+
+   
+
+   
+
+## 4. 前端页面实现上传图片的展示
+
+要使用 **文件读取** **FileReader** 对象来进行读取上传文件；
+
+**自我概念**： 对象允许Web应用程序异步读取存储在用户计算机上的文件 。
+
+![图片的格式](H:\node.js\视频教程\博客项目\blog\md\images\图片的格式.png)
+
+**基本语法**：
+
+如果要上传多个图片，可以设置 **`nultiple`  允许用户一次上传多个文件** ；
+
+```html
+<div class="form-group">
+   <label for="exampleInputFile">文章封面</label>
+    <!-- 文件上传组件 -->
+   <input type="file" name="cover" id="cover">
+    <!-- 展示的图片 -->
+   <div class="thumbnail-waper">
+       <img class="img-thumbnail" src="">
+   </div>
+</div>
+```
+
+
+
+```js
+// 获取 上传文件
+let cover = document.querySelector('#cover');
+// 获取 展示图片的 src
+let img = document.querySelector('.img-thumbnail');
+// 选中 上传文件 后触发；
+cover.onchange = function() {
+    // 1.创建文件读取对象
+    let reader = new FileReader();
+    // 用户选择上传的文件列表 this.files[0] 选择第一个文件
+    // console.log(this.files[0]);
+    // 2.读取文件
+    reader.readAsDataURL(this.files[0]);
+    // 3.监听 onload 事件
+    reader.onload = function() {
+        // 上传文件的编码格式
+        // console.log(reader.result);
+        // 把读取的 图片编码格式，给图片的 src 属性，就可以展示图片
+        img.src = reader.result;
+    }
+}
+```
+
+![上传文件的信息](H:\node.js\视频教程\博客项目\blog\md\images\上传文件的信息.png)
+
+
+
+## 5. 存储到数据库中
+
+问题：文章的封面，如何在 页面上显示呢？
+
+ "path": "H:\\node.js\\视频教程\\博客项目\\blog\\public\\uploads\\upload_d1930c92c764cac68f47b04a85fddd6c.jpg",
+
+如果把整个路径都存储到数据库中，那在加载图片时，只是在 本地 查找，肯定查找不到的，因为 图片是保存。在 服务器 的内存中， 所以 我们要在 挂载的静态资源，目录中得到他，所以 要截取 存储的路径，从 public 后，就是我们要的 路径 。
+
+```js
+// 截取path，获取 数组的第2个，这个地址，就可以获取图片
+files.cover.path.split('public')[1]
+// \\uploads\\upload_d1930c92c764cac68f47b04a85fddd6c.jpg
+// 在浏览器 地址栏中 搜索，就可以访问到资源。
+```
+
+![访问获取到的图片路径](H:\node.js\视频教程\博客项目\blog\md\images\访问获取到的图片路径.png)
+
+然后就可以 进行 数据的插入了：
+
+```js
+//  添加文章 表单提交路由
+// 导入 formidable 模块
+const formidable = require('formidable');
+const path = require("path");
+const { article } = require('../model/article');
+
+module.exports = (req, res) => {
+  // 创建表单解析对象
+  const form = new formidable.IncomingForm();
+  // 设置文件上传的路径，使用绝对路径
+  form.uploadDir = path.join(__dirname, '../', 'public', 'uploads');
+  // 是否保留上传文件的后缀名
+  form.keepExtensions = true;
+  // 对表单进行解析后，调用回调函数
+  form.parse(req, (err, fields, files) => {
+    // 把文字添加到 数据库中
+    article.create({
+      title: fields.title,
+      author: fields.author,
+      publishDate: fields.publishDate,
+      cover:  files.cover.path.split('public')[1],
+      content: fields.content
+    }).then(res => console.log('添加文章成功'))
+      .catch(err => console.log('添加文章失败' + err));
+
+    // 重定向到 文章列表 页面
+    res.redirect('/admin/article');
+  })
+}
+```
+
+
+
+## 6. 文章列表的展示
+
+在 article.js 中书写 文章列表 的处理代码：
+
+1.导入  article 数据库对象， 查取数据库 所有文章列表数据，然后根据查询的数据，渲染 位置列表 。
+
+2.处理 时间 的格式，我们现在使用的是 express 框架里的 `express-art-template`, 所以要进入 `art-template` 引擎，来引入 变量 到 模板中 。
+
+```js
+app.js:
+// 导入 模板引擎
+const template = require('art-template');
+// 把 处理时间变量存储到 模板引擎 中
+template.defaults.imports.dateFormat = dateFormat;
+
+article.art :
+<td>{{ dateFormat($value.publishDate, 'yyyy-mm-dd') }}</td>
+```
+
+3.处理文章表单的作者显示问题，查取到的数据是 文章作者的 id，和 user 集合进行了关联，所以要使用  `populate('author')` 来声明进行关联的字段名 ；
+
+```js
+// 文章列表页面
+const { article } = require('../model/article');
+module.exports = async (req, res) => {
+   // 查询所有数据，并渲染到页面上，添加集合的关联
+   const pagination = await article.find().populate('author');
+
+   res.render('admin/article', {
+      // 侧边栏的选中状态
+      currenLink: 'article',
+      // 页面渲染数据
+      pagination: pagination
+   });
+}
+
+article.art
+<td>{{ $value.author.username }}</td>
+```
+
+`$value.author`：
+
+![关联后，拿到的数据](H:\node.js\视频教程\博客项目\blog\md\images\关联后，拿到的数据.png)
+
+数据管理 要注意这一点：
+
+![数据库集合的管理1](H:\node.js\视频教程\博客项目\blog\md\images\数据库集合的管理1.png)
+
+![数据库集合的关联2](H:\node.js\视频教程\博客项目\blog\md\images\数据库集合的关联2.png)
+
+
+
+4.使用新方法处理分页
+
+概述：使用 **mongoose-sex-page**  模块，可以更便捷的实现分页功能 。
+
+下载：
+
+```js
+> npm install mongoose-sex-page
+```
+
+基本语法：
+
+```js
+// 引入分页模块
+const pageination = require('mongoose-sex-page');
+
+pagination(集合构造函数).page(1) .size(20) .display(8) .exec();
+```
+
+方法介绍：
+
+```js
+/*
+pagination():  填写需要查询的集合；
+page():  当前页；
+size(): 每页显示的条数据;
+display(): 一次显示的页码;
+exec(): 开始查找；
+*/
+```
+
+要把这个查取到是数据，代替之前查取的数据，显示在页面上 。之前的语句 有关于 集合的关联的所以要添加进去；
+
+```js
+// 引入分页模块
+const pageination = require('mongoose-sex-page');
+
+// 使用分页模块，查询数据
+let page = req.query.page;
+// pagination(集合构造函数).page(1) .size(20) .display(8) .exec();
+const pagination = await pageination(article).find().populate('author').page(page).size(2).display(5).exec();
+```
+
+查取的数据为：
+
+![分页模块查询](H:\node.js\视频教程\博客项目\blog\md\images\分页模块查询.png)
+
+所以我们模板的语法为：
+
+```html
+<tbody>
+    {{each pagination.records}}
+    <tr>
+        <td>{{@ $value._id }}</td>
+        <td>{{ $value.title }}</td>
+        <td>{{ dateFormat($value.publishDate, 'yyyy-mm-dd') }}</td>
+        <td>{{ $value.author.username }}</td>
+        <td>
+            <a href="article-edit.html" class="glyphicon glyphicon-edit"></a>
+            <i class="glyphicon glyphicon-remove" data-toggle="modal"></i>
+        </td>
+    </tr>
+    {{/each}}
+</tbody>
+
+<!-- /内容列表 -->
+<!-- 分页 -->
+<ul class="pagination">
+    <!-- 上一页 -->
+    <% if(pagination.page > 1) {%>
+    <li>
+        <a href="/admin/article?page={{pagination.page - 1}}">
+        <span>&laquo;</span>
+      </a>
+    </li>
+    <% } %>
+        
+     <!-- 页码 -->   
+    {{each pagination.display}}
+    <li><a href="/admin/article?page={{$index + 1}}">{{$index + 1}}</a></li>
+    {{/each}}
+        
+     <!-- 下一页 -->
+    <% if (pagination.page < pagination.pages) {%>
+    <li>
+        <a href="/admin/article?page={{pagination.page - 0 + 1}}">
+        <span>&raquo;</span>
+      </a>
+    </li>
+    <% } %>
+</ul>
+```
+
+
+
+# 9. mongoDB 添加账号
+
+以管理员运行 cmd
+
+连接数据库 mongo
+
+查看数据库 show dbs
+
+```js
+> show dbs
+admin    0.000GB
+blog     0.000GB
+config   0.000GB
+db1      0.000GB
+db2      0.000GB
+local    0.000GB
+student  0.000GB
+```
+
+
+
+切换到 admin 数据库（必须要切换到这个数据库，才能创建 超级用户：
+
+```js
+> use admin
+switched to db admin   // 切换成功
+```
+
+
+
+创建超级管理员账号 ：
+
+```js
+> db.createUser({user:'root',pwd:'root',roles:['root']})
+Successfully added user: { "user" : "root", "roles" : [ "root" ] }
+```
+
+
+
+进入 blog 集合，给 blog 集合创建账号：
+
+```js
+> db.createUser({user:'itcast',pwd:'itcast',roles:['readWrite']})
+Successfully added user: { "user" : "itcast", "roles" : [ "readWrite" ] }
+```
+
+
+
+退出编辑： exit 
+
+
+
+停止当前服务：
+
+```js
+> net stop mongodb
+MongoDB Server (MongoDB) 服务正在停止.
+MongoDB Server (MongoDB) 服务已成功停止。
+```
+
+
+
+卸载服务：
+
+```js
+> mongod --remove
+
+2020-07-07T10:56:06.792+0800 I  CONTROL  [main] Automatically disabling TLS 1.0, to force-enable TLS
+ 1.0 specify --sslDisabledProtocols 'none'
+2020-07-07T10:56:07.381+0800 W  ASIO     [main] No TransportLayer configured during NetworkInterface
+ startup
+2020-07-07T10:56:07.382+0800 I  CONTROL  [main] Trying to remove Windows service 'MongoDB'
+2020-07-07T10:56:08.107+0800 I  CONTROL  [main] Service 'MongoDB' removed
+```
+
+
+
+重新创建 mongodb 服务：
+
+```js
+>mongod --logpath="C:\Program Files\MongoDB\Server\4.2\log\mongod.log" --dbpath="
+C:\Program Files\MongoDB\Server\4.2\data" --install --auth
+
+2020-07-07T10:41:17.283+0800 I  CONTROL  [main] log file "C:\Program Files\MongoDB\Server\4.2\log\mo
+ngod.log" exists; moved to "C:\Program Files\MongoDB\Server\4.2\log\mongod.log.2020-07-07T02-41-17".
+```
+
+​	日记目录，存储目录 ；
+
+​	--auth 说明这个数据库，需要登录才能操作；
+
+
+
+ 启动 mongodb 服务： net start mongodb
+
+然后启动项目，进行登录，发现登录不上，命令行报错：
+
+```js
+MongoError: command find requires authentication
+```
+
+错误为：*查询功能需要 身份验证*；
+
+解决： 在项目连接数据库模块中，书写，连接数据库所需的 用户账号 和 密码 。
+
+账号：密码
+
+connent.js： 之前的
+
+```js
+//  创建数据库的
+const mongoose = require('mongoose');
+
+mongoose.connect('mongodb://localhost/blog', { useNewUrlParser: true,  useUnifiedTopology: true, useCreateIndex: true})
+        .then(() => console.log('数据库连接成功'))
+        .catch(err => console.log('数据库连接失败' + err));
+```
+
+连接的语法：
+
+```js
+mongodb:// 账号名：密码 @ localhost / 库名
+```
+
+修改后，就可以访问 blog 数据库了 
+
+```js
+//  创建数据库的
+const mongoose = require('mongoose');
+
+mongoose.connect('mongodb://itcast:itcast@localhost/blog', { useNewUrlParser: true,  useUnifiedTopology: true, useCreateIndex: true})
+        .then(() => console.log('数据库连接成功'))
+        .catch(err => console.log('数据库连接失败' + err));
+```
+
+
+
+# 10. 开发环境 与 生产环境
+
+**概念**：
+
+​		环境，就是指项目运行的地方：
+
+- 当项目处于开发阶段，项目运行在开发人员的电脑上，项目所处的环境就是开发环境。
+- 当项目开发完成以后，要将项目放到真实的网站服务器电脑中运行，项目所处的环境就是生产环境。
+
+
+
+## 1. 为什么要区分开发环境与生产环境
+
+因为在不同的环境中，项目的配置是不一样的，需要在项目代码中判断当前项目运行的环境，根据不同的环境应用不同的项目配置。
+
+
+
+## 2. 如何区分开发环境与生产环境
+
+通过电脑操作系统中的系统环境变量区分当前是开发环境还是生产环境。
+
+![设置环境](H:\node.js\视频教程\博客项目\blog\md\images\设置环境.png)
+
+我们设置好系统环境变量后，可以在项目中 输出系统环境变量：
+
+```js
+app.js :
+process.env
+```
+
+![环境变量](H:\node.js\视频教程\博客项目\blog\md\images\环境变量.png)
+
+然后，在项目中，可以通过以下代码来得到当前所处的 环境：
+
+```js
+ if (process.env.NODE_ENV == 'development') {
+     // 开发环境
+ } else {
+     // 生产环境
+ }
+```
+
+development  开发环境
+
+production  生成环境
+
+
+
+## 3. 将用户的请求 打印到控制台中到 环境变量 中的值。
+
+使用第三方模块 morgan 可以将客户端的请求打印到 控制台 中：
+
+```js
+> npm install morgan
+```
+
+**语法**：
+
+```js
+// 导入 输出 客户端请求信息模块
+const morgan = require('morgan');
+
+// 获取当前所处的环境
+if (process.env.NODE_ENV == 'development') {
+  // 开发环境
+  console.log('开发环境');
+  // 在开发环境中，将客户端的请求信息，打印到控制台中(会输出所有请求包括 静态资源的请求)
+  app.use(morgan('dev'));
+} else {
+  // 生产环境
+  console.log('生产环境');
+}
+```
+
+**输出**：
+
+![输出请求的信息](H:\node.js\视频教程\博客项目\blog\md\images\输出请求的信息.png)
+
+**请求方式，  请求路径，  请求状态，  请求的响应时间**
+
+
+
+## 4. 第三方模块config
+
+**作用**：
+
+​		允许开发人员将 *不同运行环境下* 的应用配置信息 *抽离* 到单独的文件中，模块内部自动判断当前应用的运行环境，
+
+​		并读取对应的配置信息，极大提供应用配置信息的维护成本，避免了当运行环境重复的多次切换时，手动到项目代码 。
+
+**下载**：
+
+```js
+npm install config
+```
+
+**步骤**：
+
+1.使用npm install config命令下载模块；
+
+2.在项目的根目录下新建 `config文件夹`；
+
+3.在config文件夹下面新建 `default.json`、`development.json`、`production.json`  文件；
+
+4.在项目中通过require方法，将模块进行导入；
+
+5.使用模块内部提供的get方法获取配置信息；
+
+**操作**：
+
+default.json： 默认的，当读取的 属性，没有在 其他2个文件中读取到时，会去读取这个模块 。
+
+config 会自动对 环境进行判断，判断当前的环境是哪种环境，就执行不同的文件；前提是 在系统环境变量 中创建一个 环境标记。
+
+development.json ：  开发环境
+
+```json
+{
+  "db": {
+    "user": "itcast",
+    "pwd": "itcast",
+    "host": "localhost",
+    "port": "27017",
+    "name": "blog"
+  }
+}
+```
+
+其他的2个 json 文件都需要写内容，不然会报错的：
+
+修改数据库的连接：
+
+```js
+//  创建数据库的
+const mongoose = require('mongoose');
+// 导入 font 模块，判断当前的环境，获取不同的数据账号信息
+const config = require('config');
+
+mongoose.connect(`mongodb://${config.get('db.user')}:${config.get('db.pwd')}@${config.get('db.host')}/${config.get('db.name')}`, { useNewUrlParser: true,  useUnifiedTopology: true, useCreateIndex: true})
+        .then(() => console.log('数据库连接成功'))
+        .catch(err => console.log('数据库连接失败' + err));
+```
+
+
+
+## 5. 存储敏感信息
+
+**概念**： 抽离密码到 环境变量中，因为别人，看你的项目这个文件时，就知道你数据库的连接密码！
+
+1.在 config 文件夹创建 `custom-environment-variables.json` 文件；
+
+然后在文件中书写想存储的敏感信息如 数据库的连接密码：
+
+```js
+{
+  "db": {
+    "pwd": "APP_PWD"
+  }
+}
+```
+
+2.创建 系统环境变量，创建一个  `APP_PWD` 项：
+
+![存储敏感信息](H:\node.js\视频教程\博客项目\blog\md\images\存储敏感信息.png)
+
+值为我们连接数据库的密码；
+
+3.删除 `development.json` 文件中的 pwd 项：
+
+```js
+{
+  "db": {
+    "user": "itcast",
+    "host": "localhost",
+    "port": "27017",
+    "name": "blog"
+  }
+}
+```
+
+4.在连接数据库时，遇到 db.pwd 在 ``development`  中，找不到，于是就会去 我们创建的这个文件中找， 看到 `APP_PWD`  就到 系统环境变量 中寻找 。
+
+要从新打开 cmd 窗口，运行项目，依然可以连接数据库 。
+
+p18

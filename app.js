@@ -11,9 +11,27 @@ const admin = require('./router/admin');
 require('./model/connent');
 // 导入 session 模块
 const session = require('express-session');
+// 导入 模板引擎
+const template = require('art-template');
+// 导入 处理时间模块
+const dateFormat = require('dateformat');
+// 导入 输出 客户端请求信息模块
+const morgan = require('morgan');
 
 // 创建服务器
 const app = express();
+
+// 获取当前所处的环境
+if (process.env.NODE_ENV == 'development') {
+  // 开发环境
+  console.log('开发环境');
+  // 在开发环境中，将客户端的请求信息，打印到控制台中(会输出所有请求包括 静态资源的请求)
+  app.use(morgan('dev'));
+  console.log(process.env);
+} else {
+  // 生产环境
+  console.log('生产环境');
+}
 
 // 挂载静态资源, 要放在登录拦截之前；
 app.use(express.static(path.join(__dirname, 'public')));
@@ -38,12 +56,13 @@ app.engine('art', require('express-art-template'));
 app.set('views', path.join(__dirname, 'views'));
 // 设置默认后缀，注意不要多写了 s
 app.set('view engine', 'art');
+// 把 处理时间变量存储到 模板引擎 中
+template.defaults.imports.dateFormat = dateFormat;
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
   const data = JSON.parse(err);
   // 1.第一代：return res.redirect('/admin/user-edit?message='+ message);
-  // {"path":"/admin/user-edit","message":"您输入的密码不一致","id":"5ef5f917fca85f0eac57b8c2"}
   // 2.第二代：res.redirect(`${data.path}?message=${data.message}`); // 这样只能获取到 path 和 message，无法获取 id
   // 循环遍历，拿到传递过来的每一项数据
   const parameter = [];

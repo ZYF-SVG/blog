@@ -1,6 +1,6 @@
 {{extend '../common/layout.art'}}
 
-{{block 'title'}} 文章编辑 {{/block}}
+{{block 'title'}} 添加文章 {{/block}}
 
 {{block 'main'}}
     <!-- 头部 -->
@@ -14,33 +14,34 @@
         <div class="main">
             <!-- 分类标题 -->
             <div class="title">
-                <h4>5b9a716cb2d2bf17706bcc0a</h4>
+                <h4>{{@ userInfo._id }}</h4>
             </div>
             <!-- /分类标题 -->
-            <form class="form-container">
+            <form class="form-container" action="/admin/article-add" method="post"
+            enctype="multipart/form-data">
                 <div class="form-group">
                     <label>标题</label>
-                    <input type="text" class="form-control" placeholder="请输入文章标题">
+                    <input type="text" name="title" class="form-control" placeholder="请输入文章标题">
                 </div>
                 <div class="form-group">
                     <label>作者</label>
-                    <input type="text" class="form-control" readonly>
+                    <input type="text" name="author" value="{{@ userInfo._id }}" class="form-control" readonly>
                 </div>
                 <div class="form-group">
                     <label>发布时间</label>
-                    <input type="date" class="form-control">
+                    <input type="date" name="publishDate" class="form-control">
                 </div>
                 
                 <div class="form-group">
                    <label for="exampleInputFile">文章封面</label>
-                   <input type="file">
+                   <input type="file" name="cover" id="cover">
                    <div class="thumbnail-waper">
                        <img class="img-thumbnail" src="">
                    </div>
                 </div>
                 <div class="form-group">
                     <label>内容</label>
-                    <textarea class="form-control" id="editor"></textarea>
+                    <textarea name="content" class="form-control" id="editor"></textarea>
                 </div>
                 <div class="buttons">
                     <input type="submit" class="btn btn-primary">
@@ -71,5 +72,26 @@
 
         // 获取数据
         // const editorData = editor.getData();
+
+        // 获取 上传文件
+        let cover = document.querySelector('#cover');
+        // 获取 展示图片的 src
+        let img = document.querySelector('.img-thumbnail');
+        // 选中 上传文件 后触发；
+        cover.onchange = function() {
+            // 1.创建文件读取对象
+            let reader = new FileReader();
+            // 用户选择上传的文件列表 this.files[0] 选择第一个文件
+            // console.log(this.files[0]);
+            // 2.读取文件
+            reader.readAsDataURL(this.files[0]);
+            // 3.监听 onload 事件
+            reader.onload = function() {
+                // 上传文件的编码格式
+                // console.log(reader.result);
+                // 把读取的 图片编码格式，给图片的 src 属性，就可以展示图片
+                img.src = reader.result;
+            }
+        }
     </script>
 {{/block}}

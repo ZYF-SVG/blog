@@ -22,17 +22,19 @@ admin.post('/user-eait-fn', require('../middleware/userAdd'));
 // 修改用户信息路由
 admin.post('/user-modify', require('../middleware/usermodify'));
 
+// 用户删除路由
+admin.get('/delete', require('../middleware/user-delete'));
+
 // 用户退出
 admin.get('/logout', require('../middleware/loginout'));
 
-// 文章编辑页面
-admin.get('/article-edit', (req, res) => {
-  res.render('admin/article-edit');
-})
+// 文章列表页面
+admin.get('/article', require('../middleware/article'));
 
-// 文章管理页面
-admin.get('/article', (req, res) => {
-  res.render('admin/article');
-})
+// 渲染 添加 和 编辑 文章页面 
+admin.get('/article-edit', require('../middleware/article-edit'));
+
+// 提交 添加文章 路由
+admin.post('/article-add', require('../middleware/article-add'));
 
 module.exports = admin;

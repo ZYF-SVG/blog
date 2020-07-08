@@ -20,7 +20,8 @@ module.exports = async (req, res) => {
       // 不同操作，有不同的表单提交地址, 修改用户携带 id 过去
       actiona: '/admin/user-modify?id=' + id,
       // 按钮
-      button: '修改'
+      button: '修改',
+      currenLink: 'user'
     })
   } else {
     // 添加操作
@@ -28,7 +29,8 @@ module.exports = async (req, res) => {
     res.render('admin/user-edit', {
       message: req.query.message,
       actiona: '/admin/user-eait-fn',
-      button: '提交'
+      button: '提交',
+      currenLink: 'user'
     });
   }
 }
