@@ -118,6 +118,25 @@ textarea {
 .navigation li .active {
 	background: #ff7300;
 }
+
+/* 退出按钮 */
+.sign_out {
+	display: none;
+	position: absolute;
+	top: 61px;
+	right: 200px;
+	width: 122px;
+	padding: 10px;
+	background-color: #3F434C;
+	text-align: center;
+	font-size: 16px;
+	animation: all 1s ease;
+}
+
+.sign_out a {
+	color: #fff;
+}
+
 /* 网站导航结束 */
 
 /* 文章信息开始 */

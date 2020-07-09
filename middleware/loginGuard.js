@@ -1,11 +1,14 @@
-//  登录拦截中间件
+//  请求拦截中间件
 module.exports = (req, res, next) => {
   // 除登录页面 和  req.session.username 为 undefined（就是用户没有登录
   if (req.url != '/login' && !req.session.username) {
     res.redirect('/admin/login');
   } else {
-    // console.log(req.session.username);
-    // console.log('我发送了session');
+    // 拦截 访问 /admin 请求路径，判断当前用户角色，如果不是 超级管理员 在访问 /admin 
+    // 时，就跳往 文章首页 。
+    if (req.session.role == 'normal') {
+      return res.redirect('/home/');
+    }
     next();
   }
 }

@@ -2246,4 +2246,365 @@ mongoose.connect(`mongodb://${config.get('db.user')}:${config.get('db.pwd')}@${c
 
 要从新打开 cmd 窗口，运行项目，依然可以连接数据库 。
 
-p18
+
+
+# 11. 前台展示页面
+
+## 1.渲染路由，抽离公共部分
+
+添加渲染页面路由：
+
+```js
+// 渲染文章列表页面
+home.get('/', require('./home/index'));
+
+// 渲染文章详情页面
+home.get('/article', require('./home/article'));
+```
+
+
+
+home 文件夹，存放路由处理函数文件；
+
+- index.js  首页
+- article.js  详情页
+
+使用模板引擎渲染页面，修改静态资源的请求路径，创建html骨架模板，查取公共部分；
+
+common 文件夹存储公共部分：
+
+- layout.art 骨架模板
+  - main 坑
+  - link 坑
+
+继承 骨架模板，然后填坑；
+
+- header.art 头部模板
+  - 提取
+  - 引入 include 
+
+
+
+## 2. 渲染文章列表
+
+result 来接收查询的数据；注意作者
+
+![查取的数据](H:\node.js\视频教程\博客项目\blog\md\images\查取的数据.png)
+
+
+
+```js
+// 文章首页路由处理函数
+// 引入 文章集合
+const { article } = require('../../model/article');
+// 导入分页模块
+const pageination = require('mongoose-sex-page');
+
+module.exports = async (req, res) => {
+  const page = req.query.page;
+  // 查询文章列表
+  const result = await pageination(article).page(page).size(4).display(2).find().populate('author').exec();
+
+  res.render('home/default', {
+    result: result 
+  });
+}
+```
+
+然后在文章列表 模板中渲染数据：
+
+```html
+<!-- 文章列表开始 -->
+<ul class="list w1100">
+    {{each result.records}}
+    <li class="{{$index % 2 == 0 ? 'fl' : 'fr'}}">
+        <a href="article.html" class="thumbnail">
+            <img src="{{$value.cover}}">
+        </a>
+        <div class="content">
+            <a class="article-title" href="article.html">{{$value.title}}</a>
+            <div class="article-info">
+                <span class="author">{{$value.author.username}}</span>
+                <span>{{dateFormat($value.publishDate, 'yyyy-MM-dd')}}</span>
+            </div>
+            <div class="brief">
+                {{@$value.content.substr(0, 100) + '...'}}
+            </div>
+        </div>
+    </li>
+    {{/each}}
+</ul>
+<!-- 文章列表结束 -->
+
+<!-- 分页开始  -->
+<div class="page w1100">
+  {{if result.page > 1}}
+    <a href="/home/?page={{result.page - 1}}">上一页</a>
+    {{/if}}
+    {{each result.display}}
+    <a href="/home/?page={{$value}}" class="{{result.page == $value ? 'active' : ''}}">{{$value}}</a>
+    {{/each}}
+    {{if result.page < result.pages}}
+    <a href="/home/?page={{result.page - 0 + 1}}">下一页</a>
+    {{/if}}
+</div>
+<!-- 分页结束 -->
+```
+
+渲染文章列表时，要对文章的内容进行 处理，当文章的字数太多时，我们要进行截取，展示100 个字，然后在后面添加 `...` 签；
+
+
+
+## 3. 渲染文章详情页面
+
+点击文章列表 跳转 到 文章详情页面：
+
+```js
+<a href="/home/article?id={{@$value._id}}" class="thumbnail">
+    <img src="{{$value.cover}}">
+</a>
+```
+
+渲染文章详情路由： 根据 id 查找文章数据 。
+
+```js
+// 文章详情路由处理函数
+// 导入文章集合
+const { article } = require('../../model/article');
+
+module.exports = async (req, res) => {
+  const id = req.query.id;
+  const articlea = await article.findOne({_id: id}).populate('author');
+
+  res.render('home/article', {
+    articlea: articlea
+  });
+}
+```
+
+然后在 文章详情模板中数据。
+
+
+
+## 4  评论
+
+### 1.创建评论集合
+
+- 当前文章的 id ： aid
+  - 和 文章集合 进行关联；
+- 评论用户的 id： uid
+  - 和 用户集合 进行关联
+- 容器 itme
+  - type： Date
+- 评论内容 content
+  - type： String
+
+```js
+// 评论集合
+const mongoose = require('mongoose');
+
+const commentSchema = new mongoose.Schema({
+  aid: {   // 文章的id，区分评论的文章
+    type: mongoose.Schema.Types.ObjectId,
+    rel: 'Article'
+  },
+  uid: {  // 评论用户的id
+    type: mongoose.Schema.Types.ObjectId,
+    rel: 'User'
+  },
+  item: { // 评论日期
+    type: Date
+  },
+  content: {  // 评论内容
+    type: String,
+    require: true
+  }
+})
+
+const comment = mongoose.model('Comment', commentSchema);
+
+module.exports = {
+  comment
+}
+```
+
+
+
+### 2. 判断当前用户有没有登录
+
+用户登录时，进行判断，如果用户 是 超级用户就 跳转到 后台管理系统；如果不是就 跳转到 博客首页 。在登录路由处理。
+
+![对登录用户进行判断，跳转地址](H:\node.js\视频教程\博客项目\blog\md\images\对登录用户进行判断，跳转地址.png)
+
+虽然可以对 普通用户登录 跳转到 文章列表页面，对 超级管理员 跳转到 后台管理页面，但是，普通用户登录后，虽然是跳转到 文章列表页面，但是 他可以通过 浏览器地址栏 去访问 `admin/user` 页面；因为登录拦截 中，只拦截 `不是访问 登录页面 和 没有登录的请求` 并没有判断 登录用户的角色 。
+
+所以在 请求拦截中间件 进行判断：
+
+```js
+//  请求拦截中间件
+module.exports = (req, res, next) => {
+  // 除登录页面 和  req.session.username 为 undefined（就是用户没有登录
+  if (req.url != '/login' && !req.session.username) {
+    res.redirect('/admin/login');
+  } else {
+    // 拦截 访问 /admin 请求路径，判断当前用户角色，如果不是 超级管理员 在访		  问 /admin 时，就跳往 文章首页 。
+    if (req.session.role == 'normal') {
+      	return res.redirect('/home/');
+    }
+    next();
+  }
+}
+```
+
+这样，在登录的用户为 普通用户 时，会被重定向到 文章列表页面，当 登录的普通用户 想访问  /admin 的页面（除 登录页面），都会回到原来的页面。
+
+
+
+### 3. 隐藏评论区域
+
+用户没有登录，没有就隐藏评论，提示用户登录后，才可以评论。
+
+用户退出时，记得清空存储在模板引擎中的用户信息： 
+
+- 之前写的 退出路由 是管理人员退出的，想让 普通用户 使用是没有办法的，因为在 进行了拦截；让 普通用户 没办法访问到 这个退出路由；
+
+- 所以我们 重新创建一个 退出路由：
+
+  router - home - logout.js
+
+```js
+home.js：
+// 普通用户退出路由
+home.get('/logout', require('./home/logout'));
+
+logout.js:
+// 普通用户退出路由
+module.exports = (req, res) => {
+  // 删除 session
+  req.session.destroy(function() {
+    // 清空 用户信息
+    req.app.locals.userInfo = null;
+    // 删除 cookie
+    res.clearCookie('connect.sid');
+    // 重定向
+    res.redirect('/home/');
+  })
+}
+```
+
+-  当有用户登录时，前台头部部分 有显示 用户的姓名，再次点击出现 退出连接；没有登录显示 登录连接，点击登录连接，跳往登录页面；
+
+控制评论区域的显示与隐藏：
+
+```html
+<%if (userInfo && userInfo.username) {%>
+<!-- 评论区域 -->
+<div class="article-comment">
+    <h4>评论</h4>
+    <!-- 评论表单 -->
+    <form class="comment-form">
+        <textarea class="comment"></textarea>
+        <div class="items">
+            <input type="submit" value="提交">
+        </div>
+    </form>
+    <!-- 评论内容 -->
+    <div class="comment-list">
+        <div class="mb10">
+            <div class="article-info">
+                <span class="author">Coder</span>
+                <span>2020-09-10</span>
+                <span>wjb19891223@163.com</span>
+            </div>
+            <div class="comment-content">
+                nice 就是这样, 非常好 !
+            </div>
+        </div>
+    </div>
+</div>
+<%} else {%>
+    <h3> 请进行登录后，才可以进行评论! </h3>
+<%} %>
+```
+
+
+
+### 4. 评论添加功能：
+
+给评论表单提交2个隐藏域，为 文章id  和  用户id，并添加 **用户id  和 文章id** 作为 value；
+
+```html
+<!-- 评论区域 -->
+<h4>评论</h4>
+<!-- 评论表单 -->
+<form class="comment-form" action="/home/comment" method="post">
+    <!-- 内容 -->
+    <textarea class="comment" name="content"></textarea>
+    <!-- 用户id -->
+    <input type="hidden" name="uid" value="{{@userInfo._id}}">
+    <!-- 文章id -->
+    <input type="hidden" name="aid" value="{{@articlea._id}}">
+    <div class="items">
+        <input type="submit" value="提交">
+    </div>
+</form>
+```
+
+添加评论路由：
+
+- 获取 表单提交的数据，插入到数据库；
+
+```js
+comment.js :
+// 文章评论路由
+// 导入评论集合
+const { comment } = require('../../model/comment');
+
+module.exports = async (req, res) => {
+  const { content, uid, aid } = req.body;
+
+  // 插入数据
+  await comment.create({
+    aid: aid,
+    uid: uid,
+    item: new Date(),
+    content: content
+  });
+  // 重定向会文章详情页面；还有传递文章的id
+  res.redirect('/home/article?id='+ aid);
+}
+```
+
+在文章详情路由中，根据 文章id 查询评论数据，并渲染到页面中，每篇文章都有不同的评论内容，是怎么区分的呢，就是 在  评论集合中的文章id了，根据文章id 查询 评论集合 中属于 这篇文章的评论数据；
+
+```js
+article.js：
+  // 根据文章的 id 去查找这个文章的评论信息，uid 关联 用户集合
+  const comments = await comment.find({aid: id}).populate('uid');
+
+  res.render('home/article', {
+    articlea: articlea,
+    comments: comments
+  });
+```
+
+![评论查询](H:\node.js\视频教程\博客项目\blog\md\images\评论查询.png)
+
+然后在页面上渲染：
+
+```html
+<!-- 评论内容 -->
+
+{{each comments}}
+<div class="mb10">
+    <div class="article-info">
+        <span class="author">{{$value.uid.username}}</span>
+        <span>{{dateFormat($value.item, 'yyyy-mm-dd')}}</span>
+        <span>{{$value.uid.email}}</span>
+    </div>
+    <div class="comment-content">
+        {{$value.content}}
+    </div>
+</div>
+{{/each}}
+```

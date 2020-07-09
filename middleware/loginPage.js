@@ -19,14 +19,28 @@ module.exports = async (req, res) => {
   if (data) {
     // 判断是否有该用户用户, 进行加密密码的验证
     let isEqual = await bcrypt.compare(password, data.password);
+
     if (isEqual) {   // 判断密码
-      // console.log('你登录了？');
-      // 通过 session 给 req 添加一个 username 的属性,值为 用户名,
+      // 通过 session 给 req 添加一个 username 的属性,记录登录的 用户,
       req.session.username = data.username;
+
+      // 记录用户的 角色
+      req.session.role = data.role;
+
+      // 对用户角色进行判断，跳转到对应的页面
+      if (req.session.role == 'admin') {
+        // 超级用户
+         res.redirect('/admin/user');
+      } else {
+        // 普通用户
+         res.redirect('/home/');
+      }
+
       // 将用户的数据 都存储数据到 模板引擎 中,记录当前登录的用户的信息
       req.app.locals.userInfo = data;
       // 页面重定向到 用户管理页面
-      res.redirect('/admin/user');
+
+      // res.redirect('/admin/user');
     } else {
       return res.status(400).render('admin/error');
     }

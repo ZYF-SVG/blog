@@ -1,0 +1,27 @@
+<!-- 前台展示页面的 html骨架模板 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>{{block 'title'}} {{/block}}</title>
+	<link rel="stylesheet" href="/home/css/base.css">
+  {{block 'link'}} {{/block}}
+</head>
+<body>
+  {{block 'main'}} {{/block}}
+
+	<%if (userInfo && userInfo.username) {%>
+	<script>
+	  // 获取用户显示框
+		let out = document.querySelector('.out');
+		let sign_out = document.querySelector('.sign_out');
+		let flag = 'none';
+
+		out.addEventListener('click', () => {
+			flag = flag  == 'none' ? 'block' : 'none'
+			sign_out.style.display = flag;
+		})
+	</script>
+	<%} %>
+</body>
+</html>

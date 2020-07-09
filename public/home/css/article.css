@@ -5,6 +5,7 @@
 }
 .article .w1100 {
 	overflow: hidden;
+	margin-bottom: 20px;
 }
 /* 文章框架结束 */
 
@@ -54,10 +55,6 @@
 /* 侧边栏框架结束 */
 
 /* 侧边栏内容开始 */
-.section {
-	
-}
-
 .section h4 {
 	font-size: 14px;
 	margin-bottom: 12px;
@@ -84,9 +81,6 @@
 /* 侧边栏内容结束 */
 
 /* 评论开始 */
-.article-comment {
-
-}
 
 .article-comment h4 {
 	font-size: 16px;

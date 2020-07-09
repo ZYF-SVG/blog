@@ -27,7 +27,6 @@ if (process.env.NODE_ENV == 'development') {
   console.log('开发环境');
   // 在开发环境中，将客户端的请求信息，打印到控制台中(会输出所有请求包括 静态资源的请求)
   app.use(morgan('dev'));
-  console.log(process.env);
 } else {
   // 生产环境
   console.log('生产环境');
@@ -40,7 +39,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: false }));
 
 // 设置 session 密钥, 必须放在，路由对象之前；
-app.use(session({secret: '742317550'}));
+app.use(session({
+  secret: '742317550',   // 密钥
+  saveUninitialized: false,  // 是否发送一个初始化 session
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000  // 设置 cookie 的生命周期 毫秒为单位
+  }
+}));
 
 // 登录拦截， 放在路由对象前面
 app.use('/admin', require('./middleware/loginGuard'));
