@@ -1,15 +1,15 @@
-{{extend '../common/layout.art'}}
+{{extend './common/layout.art'}}
 
 {{block 'title'}} 添加用户 {{/block}}
 
 {{block 'main'}}
     <!-- 头部 -->
-    {{include '../common/header.art'}}
+    {{include './common/header.art'}}
     <!-- /头部 -->
     <!-- 主体内容 -->
     <div class="content">
         <!-- 侧边栏 -->
-        {{include '../common/aside.art'}}
+        {{include './common/aside.art'}}
         <!-- 侧边栏 -->
         <div class="main">
             <!-- 分类标题 -->

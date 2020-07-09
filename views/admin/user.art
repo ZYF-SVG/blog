@@ -1,15 +1,15 @@
-{{extend '../common/layout.art'}}
+{{extend './common/layout.art'}}
 
 {{block 'title'}} 用户编辑  {{/block}}
 
 {{block 'main'}}
 	<!-- 头部 -->
-    {{include '../common/header.art'}}
+    {{include './common/header.art'}}
     <!-- /头部 -->
     <!-- 主体内容 -->
     <div class="content">
     	<!-- 侧边栏 -->
-        {{include '../common/aside.art'}}
+        {{include './common/aside.art'}}
         <!-- 侧边栏 -->
         <div class="main">
         	<!-- 分类标题 -->
@@ -61,7 +61,7 @@
                 <li><a href="/admin/user?page=<%= i%>" ><%= i %></a></li>
                 <% } %>
                 <li style="display: <%= page - 0 + 1 > total ? 'none' : 'inline' %>">
-                    <a href="/admin/user?apge=<%= page - 0 + 1%>">
+                    <a href="/admin/user?page=<%= page - 0 + 1%>">
 			        <span>&raquo;</span>
 			      </a>
                 </li>
