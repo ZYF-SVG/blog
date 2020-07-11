@@ -343,7 +343,7 @@ module.exports = {
 ```js
 admin.js:
 // 引入 user 集合
-const user = require('../model/user');
+const { user } = require('../model/user');
 ```
 
 
